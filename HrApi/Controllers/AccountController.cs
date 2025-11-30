@@ -6,7 +6,17 @@ namespace HrApi.Controllers
     [Route("[controller]")]
     public class AccountController : ControllerBase
     {
-        [HttpGet("open")]
-        public IActionResult Open() => Ok("Open endpoint");
+        [HttpPost("[action]")]
+        public async Task<IActionResult> Register()
+        {
+            return Ok(new { message = "Register endpoint hit" });
+        }
+
+        [HttpPost("[action]")]
+        public async Task<IActionResult> Login()
+        {
+            return Ok(new { message = "Login endpoint hit" });
+        }
+
     }
 }

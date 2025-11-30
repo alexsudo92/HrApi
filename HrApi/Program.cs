@@ -1,4 +1,6 @@
 
+using HrApi.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace HrApi
@@ -19,6 +21,32 @@ namespace HrApi
                 opt.UseSqlite("Data Source=database.db");
             });
 
+            builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
+            {
+                options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
+            })
+                .AddRoles<IdentityRole<Guid>>()
+                .AddEntityFrameworkStores<HrContext>();
+
+            builder.Services.Configure<IdentityPasskeyOptions>(options =>
+            {
+                options.AuthenticatorTimeout = TimeSpan.FromMinutes(3);
+                options.ChallengeSize = 64;
+                options.UserVerificationRequirement = "required";
+                options.ResidentKeyRequirement = "preferred";
+                options.AuthenticatorAttachment = "platform";
+                options.ValidateOrigin = async (context) =>
+                {
+                    var origin = context.Origin;
+                    var request = context.HttpContext.Request;
+
+                    if (origin == $"https://{request.Host.Host}:{request.Host.Port}")
+                        return true;
+                    else
+                        return false;
+                };
+            });
+
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
@@ -31,7 +59,7 @@ namespace HrApi
                 app.UseSwaggerUI();
             }
 
-            using (IServiceScope scope = app.Services.CreateScope())
+            using (var scope = app.Services.CreateScope())
             {
                 var services = scope.ServiceProvider;
 
@@ -39,7 +67,8 @@ namespace HrApi
                 context.Database.EnsureCreated();
             }
 
-            //app.UseAuthorization();
+            app.UseAuthentication();
+            app.UseAuthorization();
             app.UseHsts();
             app.UseHttpsRedirection();
             app.MapControllers();
