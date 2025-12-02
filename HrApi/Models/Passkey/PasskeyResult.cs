@@ -2,7 +2,7 @@
 
 namespace HrApi.Models.Passkey
 {
-    public class PasskeyResult
+    public class PasskeyResult<T>
     {
         [JsonPropertyName("authenticatorAttachment")]
         public string AuthenticatorAttachment { get; set; }
@@ -17,7 +17,7 @@ namespace HrApi.Models.Passkey
         public string RawId { get; set; }
 
         [JsonPropertyName("response")]
-        public Response Response { get; set; }
+        public T Response { get; set; }
 
         [JsonPropertyName("type")]
         public string Type { get; set; }

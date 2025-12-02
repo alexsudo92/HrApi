@@ -12,73 +12,115 @@ namespace HrApi.Controllers
     {
         private readonly UserManager<User> _userManager;
         private readonly SignInManager<User> _signInManager;
+
         public PasskeyController(UserManager<User> userManager, SignInManager<User> signInManager)
         {
             _signInManager = signInManager;
             _userManager = userManager;
         }
 
-        public record OptionsDto(string Phone, string Email, string Username);
-
         [HttpPost("[action]")]
-        public async Task<IActionResult> CreateRegistrationOptions([FromBody] OptionsDto optionsDto)
+        public async Task<IActionResult> CreateRegistrationOptions([FromBody] PasskeyOptionsDto optionsDto)
         {
             var user = string.IsNullOrEmpty(optionsDto.Email) ? null : await _userManager.FindByEmailAsync(optionsDto.Email);
-
             if (user == null)
             {
-                var result = await _userManager.CreateAsync(new User
+                user = new User
                 {
                     UserName = optionsDto.Username,
                     Email = optionsDto.Email,
                     PhoneNumber = optionsDto.Phone,
-                });
-            }
+                };
 
-            var options = await _signInManager.MakePasskeyCreationOptionsAsync(
-                new PasskeyUserEntity
+                var result = await _userManager.CreateAsync(user);
+
+                if (!result.Succeeded)
                 {
-                    Id = Guid.NewGuid().ToString(),
+                    return BadRequest(result.Errors);
+                }
+
+                var options = await _signInManager.MakePasskeyCreationOptionsAsync(new PasskeyUserEntity
+                {
+                    Id = await _userManager.GetUserIdAsync(user),
                     Name = optionsDto.Email,
                     DisplayName = optionsDto.Username
-                }
-            );
+                });
 
-            return Ok(options);
+                return Ok(options);
+            }
+            else
+            {
+                var options = await _signInManager.MakePasskeyCreationOptionsAsync(
+                    new PasskeyUserEntity
+                    {
+                        Id = user.Id.ToString(),
+                        Name = optionsDto.Email,
+                        DisplayName = optionsDto.Username
+                    }
+                );
+
+                return Ok(options);
+            }
         }
 
         [HttpPost("[action]")]
-        public async Task<IActionResult> CompleteRegistration([FromBody] PasskeyResult passkeyResult)
+        public async Task<IActionResult> CompleteRegistration([FromBody] PasskeyDto<AttestationResponse> passkeyResultDto)
         {
-            var optionsJson = JsonSerializer.Serialize(passkeyResult);
+            var optionsJson = JsonSerializer.Serialize(passkeyResultDto.Result);
             var attestationResult = await _signInManager.PerformPasskeyAttestationAsync(optionsJson);
 
             if (!attestationResult.Succeeded)
             {
-                return BadRequest($"Error: {attestationResult.Failure.Message}");
+                return BadRequest(attestationResult.Failure.Message);
             }
 
-            var user = await _userManager.FindByEmailAsync("mymail@mail.com");
+            var user = await _userManager.FindByEmailAsync(passkeyResultDto.Email);
+            if (user == null)
+            {
+                return BadRequest(new { error = "User doesn't exist" });
+            }
             var addResult = await _userManager.AddOrUpdatePasskeyAsync(user, attestationResult.Passkey);
 
             if (!addResult.Succeeded)
             {
-                return BadRequest("Failed to store passkey");
+                return BadRequest(new { error = "Failed to store passkey" });
             }
 
             return Ok("Successful passkey registration");
         }
+
         //result = await navigator.credentials.create({publicKey: PublicKeyCredential.parseCreationOptionsFromJSON(json) })
         [HttpPost("[action]")]
-        public async Task<IActionResult> CreateAuthenticationOptions()
+        public async Task<IActionResult> CreateAuthenticationOptions(string email)
         {
-            return Ok(new { a = "22" });
+            ArgumentException.ThrowIfNullOrEmpty(email, nameof(email));
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return BadRequest(new { error = "User doesn't exist" });
+            }
+
+            var options = await _signInManager.MakePasskeyRequestOptionsAsync(user);
+
+            return Ok(options);
         }
 
+        //result = await navigator.credentials.get({publicKey: PublicKeyCredential.parseRequestOptionsFromJSON(json)})
         [HttpPost("[action]")]
-        public async Task<IActionResult> CompleteAuthentication()
+        public async Task<IActionResult> CompleteAuthentication([FromBody] PasskeyDto<AssertionResponse> passkeyDto)
         {
-            return Ok(new { a = "22" });
+            var json = JsonSerializer.Serialize(passkeyDto.Result);
+            var assertionResult = await _signInManager.PerformPasskeyAssertionAsync(json);
+            var result = await _signInManager.PasskeySignInAsync(json);
+
+            if (result.Succeeded && assertionResult.Succeeded)
+            {
+                return Ok(result);
+            }
+            else
+            {
+                return Unauthorized(assertionResult.Failure.Message);
+            }
         }
     }
 }

@@ -2,7 +2,7 @@
 
 namespace HrApi.Models.Passkey
 {
-    public class Response
+    public class AttestationResponse
     {
         [JsonPropertyName("attestationObject")]
         public string AttestationObject { get; set; }
