@@ -1,5 +1,6 @@
 using HrApi.Models;
 using HrApi.Models.Passkey;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
@@ -8,6 +9,7 @@ namespace HrApi.Controllers
 {
     [ApiController]
     [Route("[controller]")]
+    [AllowAnonymous]
     public class PasskeyController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
@@ -77,16 +79,16 @@ namespace HrApi.Controllers
             var user = await _userManager.FindByEmailAsync(passkeyResultDto.Email);
             if (user == null)
             {
-                return BadRequest(new { error = "User doesn't exist" });
+                return BadRequest(new { Message = "User doesn't exist" });
             }
             var addResult = await _userManager.AddOrUpdatePasskeyAsync(user, attestationResult.Passkey);
 
             if (!addResult.Succeeded)
             {
-                return BadRequest(new { error = "Failed to store passkey" });
+                return BadRequest(new { Message = "Failed to store passkey" });
             }
 
-            return Ok("Successful passkey registration");
+            return Ok(new { Message = "Successful passkey registration" });
         }
 
         //result = await navigator.credentials.create({publicKey: PublicKeyCredential.parseCreationOptionsFromJSON(json) })
@@ -97,7 +99,7 @@ namespace HrApi.Controllers
             var user = await _userManager.FindByEmailAsync(email);
             if (user == null)
             {
-                return BadRequest(new { error = "User doesn't exist" });
+                return BadRequest(new { Message = "User doesn't exist" });
             }
 
             var options = await _signInManager.MakePasskeyRequestOptionsAsync(user);
@@ -115,7 +117,7 @@ namespace HrApi.Controllers
 
             if (result.Succeeded && assertionResult.Succeeded)
             {
-                return Ok(result);
+                return Ok(new { Message = "Successful passkey authentication" });
             }
             else
             {

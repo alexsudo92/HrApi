@@ -1,3 +1,6 @@
+using HrApi.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HrApi.Controllers
@@ -6,16 +9,30 @@ namespace HrApi.Controllers
     [Route("[controller]")]
     public class AccountController : ControllerBase
     {
-        [HttpPost("[action]")]
-        public async Task<IActionResult> Register()
+        private readonly SignInManager<User> _signInManager;
+        private readonly UserManager<User> _userManager;
+
+        public AccountController(UserManager<User> userManager, SignInManager<User> signInManager)
         {
-            return Ok(new { message = "Register endpoint hit" });
+            _signInManager = signInManager;
+            _userManager = userManager;
         }
 
         [HttpPost("[action]")]
-        public async Task<IActionResult> Login()
+        [Authorize]
+        public async Task<IActionResult> Info()
         {
-            return Ok(new { message = "Login endpoint hit" });
+            return Ok(new { message = "Secured info endpoint hit" });
+        }
+
+
+        [HttpPost("[action]")]
+        [Authorize]
+        public async Task<IActionResult> Logout()
+        {
+            await _signInManager.SignOutAsync();
+
+            return Ok(new { Message = "Signed out" });
         }
 
     }
