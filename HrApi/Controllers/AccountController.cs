@@ -43,7 +43,7 @@ namespace HrApi.Controllers
             return Ok(new { Message = "File uploaded", ImageUrl = $"/images/{fileName}" });
         }
 
-        [HttpPost("[action]")]
+        [HttpGet("[action]")]
         public async Task<IActionResult> Info()
         {
             var message = new List<string>();
