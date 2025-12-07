@@ -1,3 +1,4 @@
+using HrApi.Dto;
 using HrApi.Models;
 using HrApi.Models.Passkey;
 using Microsoft.AspNetCore.Authorization;
@@ -14,24 +15,35 @@ namespace HrApi.Controllers
     {
         private readonly UserManager<User> _userManager;
         private readonly SignInManager<User> _signInManager;
+        private readonly RoleManager<IdentityRole<Guid>> _roleManager;
 
-        public PasskeyController(UserManager<User> userManager, SignInManager<User> signInManager)
+        private readonly bool _isEnabled = false;
+
+        public PasskeyController(UserManager<User> userManager, SignInManager<User> signInManager, RoleManager<IdentityRole<Guid>> roleManager)
         {
             _signInManager = signInManager;
             _userManager = userManager;
+            _roleManager = roleManager;
         }
 
         [HttpPost("[action]")]
-        public async Task<IActionResult> CreateRegistrationOptions([FromBody] PasskeyOptionsDto optionsDto)
+        public async Task<IActionResult> CreateRegistrationOptions([FromBody] RegistrationOptionsDto optionsDto)
         {
+            if (!_isEnabled)
+            {
+                return BadRequest(new { Message = "Disabled" });
+            }
+
             var user = string.IsNullOrEmpty(optionsDto.Email) ? null : await _userManager.FindByEmailAsync(optionsDto.Email);
+            var id = user == null ? Guid.NewGuid() : user.Id;
             if (user == null)
             {
                 user = new User
                 {
+                    Id = id,
                     UserName = optionsDto.Username,
                     Email = optionsDto.Email,
-                    PhoneNumber = optionsDto.Phone,
+                    PhoneNumber = optionsDto.Phone
                 };
 
                 var result = await _userManager.CreateAsync(user);
@@ -40,34 +52,29 @@ namespace HrApi.Controllers
                 {
                     return BadRequest(result.Errors);
                 }
+            }
 
-                var options = await _signInManager.MakePasskeyCreationOptionsAsync(new PasskeyUserEntity
+            var options = await _signInManager.MakePasskeyCreationOptionsAsync(
+                new PasskeyUserEntity
                 {
-                    Id = await _userManager.GetUserIdAsync(user),
+                    Id = id.ToString(),
                     Name = optionsDto.Email,
                     DisplayName = optionsDto.Username
-                });
+                }
+            );
 
-                return Ok(options);
-            }
-            else
-            {
-                var options = await _signInManager.MakePasskeyCreationOptionsAsync(
-                    new PasskeyUserEntity
-                    {
-                        Id = user.Id.ToString(),
-                        Name = optionsDto.Email,
-                        DisplayName = optionsDto.Username
-                    }
-                );
-
-                return Ok(options);
-            }
+            return Ok(options);
         }
 
+        //result = await navigator.credentials.create({publicKey: PublicKeyCredential.parseCreationOptionsFromJSON(json) })
         [HttpPost("[action]")]
         public async Task<IActionResult> CompleteRegistration([FromBody] PasskeyDto<AttestationResponse> passkeyResultDto)
         {
+            if (!_isEnabled)
+            {
+                return BadRequest(new { Message = "Disabled" });
+            }
+
             var optionsJson = JsonSerializer.Serialize(passkeyResultDto.Result);
             var attestationResult = await _signInManager.PerformPasskeyAttestationAsync(optionsJson);
 
@@ -91,10 +98,14 @@ namespace HrApi.Controllers
             return Ok(new { Message = "Successful passkey registration" });
         }
 
-        //result = await navigator.credentials.create({publicKey: PublicKeyCredential.parseCreationOptionsFromJSON(json) })
         [HttpPost("[action]")]
         public async Task<IActionResult> CreateAuthenticationOptions(string email)
         {
+            if (!_isEnabled)
+            {
+                return BadRequest(new { Message = "Disabled" });
+            }
+
             ArgumentException.ThrowIfNullOrEmpty(email, nameof(email));
             var user = await _userManager.FindByEmailAsync(email);
             if (user == null)
@@ -111,6 +122,11 @@ namespace HrApi.Controllers
         [HttpPost("[action]")]
         public async Task<IActionResult> CompleteAuthentication([FromBody] PasskeyDto<AssertionResponse> passkeyDto)
         {
+            if (!_isEnabled)
+            {
+                return BadRequest(new { Message = "Disabled" });
+            }
+
             var json = JsonSerializer.Serialize(passkeyDto.Result);
             var assertionResult = await _signInManager.PerformPasskeyAssertionAsync(json);
             var result = await _signInManager.PasskeySignInAsync(json);
@@ -121,7 +137,7 @@ namespace HrApi.Controllers
             }
             else
             {
-                return Unauthorized(assertionResult.Failure.Message);
+                return Unauthorized(new { Message = assertionResult.Failure?.Message ?? "Authentication failed" });
             }
         }
     }

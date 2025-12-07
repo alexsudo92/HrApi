@@ -1,8 +1,8 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace HrApi.Models.Passkey
+namespace HrApi.Dto
 {
-    public class PasskeyOptionsDto
+    public class RegistrationOptionsDto
     {
         [JsonPropertyName("phone")]
         public string Phone { get; set; }

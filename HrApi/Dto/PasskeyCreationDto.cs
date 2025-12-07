@@ -1,6 +1,7 @@
-﻿using System.Text.Json.Serialization;
+﻿using HrApi.Models.Passkey;
+using System.Text.Json.Serialization;
 
-namespace HrApi.Models.Passkey
+namespace HrApi.Dto
 {
     public class PasskeyDto<T>
     {
