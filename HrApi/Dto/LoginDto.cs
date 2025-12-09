@@ -1,4 +1,8 @@
-﻿namespace HrApi.Dto
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace HrApi.Dto
 {
-    public record LoginDto(string Email, string Password);
+    public record LoginDto(
+        [Required(AllowEmptyStrings = false)] string Email,
+        [Required(AllowEmptyStrings = false)] string Password);
 }

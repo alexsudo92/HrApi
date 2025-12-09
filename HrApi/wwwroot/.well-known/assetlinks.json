@@ -4,7 +4,7 @@
     "target": {
       "namespace": "android_app",
       "package_name": "com.me.hrmobileapp",
-      "sha256_cert_fingerprints": [ "4E:6D:46:6D:4E:6A:45:30:4D:47:4A:6B:4E:57:49:34:5A:44:64:6A:5A:44:6C:69:4E:7A:68:6D:59:6D:56:6A:4D:6A:59:32:4D:44:52:6D:4F:47:4D:77:5A:47:59:78:5A:44:52:6C:4D:51" ]
+      "sha256_cert_fingerprints": [ "90:E7:B0:2A:0F:E2:8F:C1:CF:AC:5A:59:6F:96:DE:A0:5A:E4:30:9F:28:5B:3B:F0:48:FB:80:F4:EB:3F:19:8F" ]
     }
   },
   {

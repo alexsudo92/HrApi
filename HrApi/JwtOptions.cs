@@ -1,4 +1,4 @@
-﻿namespace HrApi.Models
+﻿namespace HrApi
 {
     public class JwtOptions
     {

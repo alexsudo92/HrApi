@@ -32,7 +32,7 @@ namespace HrApi.Controllers
             {
                 return BadRequest(new { Message = "No image provided" });
             }
-            var uploadDirectory = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
+            var uploadDirectory = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/avatars");
             var extension = Path.GetExtension(file.FileName);
             var fileName = Guid.NewGuid().ToString() + extension;
             var filePath = Path.Combine(uploadDirectory, fileName);
@@ -40,7 +40,7 @@ namespace HrApi.Controllers
             using var fs = new FileStream(filePath, FileMode.Create);
             await file.CopyToAsync(fs);
 
-            return Ok(new { Message = "File uploaded", ImageUrl = $"/images/{fileName}" });
+            return Ok(new { Message = "File uploaded", ImageUrl = $"/images/avatars/{fileName}" });
         }
 
         [HttpGet("[action]")]
@@ -80,8 +80,8 @@ namespace HrApi.Controllers
         }
 
 
-        [HttpPost("[action]")]
-        public async Task<IActionResult> Logout()
+        [HttpGet("[action]")]
+        public async Task<IActionResult> SignOut()
         {
             await _signInManager.SignOutAsync();
 

@@ -7,6 +7,7 @@ namespace HrApi.Controllers
 {
     [Route("[controller]")]
     [ApiController]
+    [Authorize]
     public class CandidatesController : ControllerBase
     {
         private readonly HrContext _context;
@@ -17,10 +18,10 @@ namespace HrApi.Controllers
         }
 
         [HttpGet("[action]")]
-        [Authorize(Roles = "Admin, Hr, BranchHead")]
         public async Task<IActionResult> Get(int count, int offset)
         {
             var candidates = await _context.Candidates
+                .Include(c => c.Workplaces)
                 .OrderBy(x => x.Id)
                 .Skip(offset)
                 .Take(count)
@@ -30,11 +31,11 @@ namespace HrApi.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "Admin, Hr, BranchHead")]
-        public IActionResult Get(string id, bool includeWorkplaces = false, bool includeInteractionIds = false, bool includeVacancyIds = false)
+        public IActionResult Get(string id, bool includeInteractionIds = false, bool includeVacancyIds = false)
         {
             var candidate = _context.Candidates
                     .Where(c => c.Id.ToString() == id)
+                    .Include(c => c.Workplaces)
                     .Select(c => new
                     {
                         c.Id,
@@ -49,8 +50,6 @@ namespace HrApi.Controllers
                         c.WorkHours,
                         c.Skills,
                         c.Experience,
-
-                        WorkplaceIds = includeWorkplaces ? c.Workplaces.Select(i => i.Id).ToList() : null,
                         InteractionIds = includeInteractionIds ? c.Interactions.Select(i => i.Id).ToList() : null,
                         VacancyIds = includeVacancyIds ? c.Vacancies.Select(v => v.Id).ToList() : null
                     })
@@ -93,8 +92,6 @@ namespace HrApi.Controllers
             return NoContent();
         }
 
-        // POST: api/Candidates
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<Candidate>> PostCandidate(Candidate candidate)
         {
@@ -104,7 +101,6 @@ namespace HrApi.Controllers
             return CreatedAtAction("GetCandidate", new { id = candidate.Id }, candidate);
         }
 
-        // DELETE: api/Candidates/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCandidate(Guid id)
         {

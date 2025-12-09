@@ -2,7 +2,6 @@
 {
     public enum Roles
     {
-        User,
         Hr,
         BranchHead,
         Admin

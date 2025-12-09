@@ -37,7 +37,6 @@ namespace HrApi
                 .AddRoles<IdentityRole<Guid>>()
                 .AddEntityFrameworkStores<HrContext>();
 
-            // Passkey setup
             //builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             //    .AddCookie(options =>
             //    {
@@ -46,7 +45,7 @@ namespace HrApi
             //        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
             //        options.Cookie.HttpOnly = true;
             //        options.Cookie.SameSite = SameSiteMode.None;
-            //        options.LoginPath = "/auth/login";
+            //        options.LoginPath = "/passkey/";
             //        options.LogoutPath = "/account/logout";
             //    });
 
@@ -57,34 +56,38 @@ namespace HrApi
             })
                 .AddJwtBearer(options =>
                 {
+                    var jwtKey = builder.Configuration["Jwt:Key"];
+                    if (string.IsNullOrEmpty(jwtKey))
+                    {
+                        throw new InvalidOperationException("JWT signing key is not configured.");
+                    }
+
                     options.TokenValidationParameters.ValidIssuer = builder.Configuration["Jwt:Issuer"];
                     options.TokenValidationParameters.ValidAudience = builder.Configuration["Jwt:Audience"];
                     options.TokenValidationParameters.IssuerSigningKey =
-                        new SymmetricSecurityKey(
-                            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]));
+                        new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
                 });
             builder.Services.AddAuthorization();
 
-            // Passkey setup
-            //builder.Services.Configure<IdentityPasskeyOptions>(options =>
-            //{
-            //    options.AuthenticatorTimeout = TimeSpan.FromMinutes(3);
-            //    options.ChallengeSize = 64;
-            //    options.AttestationConveyancePreference = "none";
-            //    options.UserVerificationRequirement = "preferred";
-            //    options.ResidentKeyRequirement = "preferred";
-            //    options.AuthenticatorAttachment = "platform";
-            //    options.ValidateOrigin = async (context) =>
-            //    {
-            //        var origin = context.Origin;
-            //        var request = context.HttpContext.Request;
+            builder.Services.Configure<IdentityPasskeyOptions>(options =>
+            {
+                options.AuthenticatorTimeout = TimeSpan.FromMinutes(3);
+                options.ChallengeSize = 64;
+                options.AttestationConveyancePreference = "none";
+                options.UserVerificationRequirement = "preferred";
+                options.ResidentKeyRequirement = "preferred";
+                options.AuthenticatorAttachment = "platform";
+                options.ValidateOrigin = async (context) =>
+                {
+                    var origin = context.Origin;
+                    var request = context.HttpContext.Request;
 
-            //        if (origin == $"https://{request.Host.Host}:{request.Host.Port}")
-            //            return true;
-            //        else
-            //            return false;
-            //    };
-            //});
+                    if (origin == $"https://{request.Host.Host}:{request.Host.Port}")
+                        return true;
+                    else
+                        return false;
+                };
+            });
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
@@ -143,16 +146,19 @@ namespace HrApi
                 }
             }
 
-            app.UseHsts();
-            app.UseHttpsRedirection();
+            if (!app.Environment.IsDevelopment())
+            {
+                app.UseHsts();
+                app.UseHttpsRedirection();
+            }
+
             app.MapStaticAssets().ShortCircuit();
             app.MapControllers();
             app.UseCors(policy =>
             {
                 policy.AllowAnyHeader()
                     .AllowAnyMethod()
-                    .AllowCredentials()
-                    .WithOrigins("http://localhost:8081");
+                    .AllowAnyOrigin();
             });
             app.UseAuthentication();
             app.UseAuthorization();

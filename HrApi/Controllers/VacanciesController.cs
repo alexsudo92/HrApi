@@ -7,6 +7,7 @@ namespace HrApi.Controllers
 {
     [Route("[controller]")]
     [ApiController]
+    [Authorize]
     public class VacanciesController : ControllerBase
     {
         private readonly HrContext _context;
@@ -17,7 +18,6 @@ namespace HrApi.Controllers
         }
 
         [HttpGet("[action]")]
-        [Authorize(Roles = "Admin, Hr, BranchHead")]
         public async Task<IActionResult> Get(int count, int offset)
         {
             var vacancies = await _context.Vacancies
@@ -30,7 +30,6 @@ namespace HrApi.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "Admin, Hr, BranchHead")]
         public IActionResult Get(string id, bool includeCandidateIds)
         {
             var vacancy = _context.Vacancies
@@ -68,8 +67,6 @@ namespace HrApi.Controllers
             return Ok(vacancy);
         }
 
-        // PUT: api/Vacancies/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         public async Task<IActionResult> PutVacancy(Guid id, Vacancy vacancy)
         {
@@ -99,8 +96,6 @@ namespace HrApi.Controllers
             return NoContent();
         }
 
-        // POST: api/Vacancies
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<Vacancy>> PostVacancy(Vacancy vacancy)
         {
@@ -110,7 +105,6 @@ namespace HrApi.Controllers
             return CreatedAtAction("GetVacancy", new { id = vacancy.Id }, vacancy);
         }
 
-        // DELETE: api/Vacancies/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteVacancy(Guid id)
         {

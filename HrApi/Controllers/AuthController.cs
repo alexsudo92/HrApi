@@ -1,5 +1,6 @@
 ﻿using HrApi.Dto;
 using HrApi.Models;
+using HrApi.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -18,19 +19,17 @@ namespace HrApi.Controllers
     {
         private readonly UserManager<User> _userManager;
         private readonly SignInManager<User> _signInManager;
-        private readonly RoleManager<IdentityRole<Guid>> _roleManager;
         private readonly JwtOptions _jwtOptions;
 
-        public AuthController(UserManager<User> userManager, SignInManager<User> signInManager, RoleManager<IdentityRole<Guid>> roleManager, IOptions<JwtOptions> jwtOptions)
+        public AuthController(UserManager<User> userManager, SignInManager<User> signInManager, IOptions<JwtOptions> jwtOptions)
         {
             _signInManager = signInManager;
             _userManager = userManager;
-            _roleManager = roleManager;
             _jwtOptions = jwtOptions.Value;
         }
 
         [HttpPost("[action]")]
-        public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
+        public async Task<IActionResult> SignIn([FromBody] LoginDto loginDto)
         {
             var user = await _userManager.FindByEmailAsync(loginDto.Email);
             if (user == null)
@@ -50,20 +49,23 @@ namespace HrApi.Controllers
         }
 
         [HttpPost("[action]")]
-        public async Task<IActionResult> Registration([FromBody] RegisterDto registerDto)
+        public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
         {
             var user = new User
             {
                 UserName = registerDto.Username,
                 Email = registerDto.Email,
-                PhoneNumber = registerDto.Phone
+                PhoneNumber = registerDto.Phone,
+                Avatar = "95f0922f-b810-4000-ae80-24840de12357.jpg"
             };
             var result = await _userManager.CreateAsync(user, registerDto.Password);
-
             if (!result.Succeeded)
             {
                 return BadRequest(result.Errors);
             }
+
+            await _userManager.AddToRoleAsync(user, Enum.GetName(Roles.Hr));
+
 
             return Ok(new { Message = "Registration successful" });
         }
@@ -78,9 +80,11 @@ namespace HrApi.Controllers
             var claims = new List<Claim>
             {
                 new (JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                new (JwtRegisteredClaimNames.Email, user.Email),
-                new (JwtRegisteredClaimNames.Name, user.UserName),
-                new Claim("roles", string.Join(",", roles))
+                new (JwtRegisteredClaimNames.Email, user.Email is null ? string.Empty : user.Email),
+                new (JwtRegisteredClaimNames.Name, user.UserName is null ? string.Empty : user.UserName),
+                new (JwtRegisteredClaimNames.PhoneNumber, user.PhoneNumber is null ? string.Empty : user.PhoneNumber),
+                new ("roles", string.Join(",", roles)),
+                new ("avatar", user.Avatar)
             };
 
             var descriptor = new SecurityTokenDescriptor

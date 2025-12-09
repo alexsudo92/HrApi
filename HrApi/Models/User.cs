@@ -4,6 +4,7 @@ namespace HrApi.Models
 {
     public class User : IdentityUser<Guid>
     {
-        public Guid Avatar { get; set; }
+        public string Avatar { get; set; } = string.Empty;
+        public List<Interaction> Interactions { get; set; }
     }
 }
