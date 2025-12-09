@@ -8,5 +8,7 @@ namespace HrApi.Models
         public DateTime Date { get; set; }
         public InteractionType Type { get; set; }
         public string Message { get; set; }
+
+        public Guid UserId { get; set; }
     }
 }

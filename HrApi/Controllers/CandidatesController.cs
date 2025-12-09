@@ -21,7 +21,24 @@ namespace HrApi.Controllers
         public async Task<IActionResult> Get(int count, int offset)
         {
             var candidates = await _context.Candidates
-                .Include(c => c.Workplaces)
+                .Select(x => new
+                {
+                    x.Id,
+                    x.Name,
+                    x.RespondDate,
+                    x.Education,
+                    x.Salary,
+                    x.Status,
+                    x.Skills,
+                    x.Employment,
+                    x.Mail,
+                    x.Phone,
+                    x.WorkHours,
+                    x.Experience,
+                    x.Workplaces,
+                    x.Interactions,
+                    VacancyIds = x.Vacancies.Select(x => x.Id)
+                })
                 .OrderBy(x => x.Id)
                 .Skip(offset)
                 .Take(count)
@@ -31,27 +48,27 @@ namespace HrApi.Controllers
         }
 
         [HttpGet("{id}")]
-        public IActionResult Get(string id, bool includeInteractionIds = false, bool includeVacancyIds = false)
+        public IActionResult Get(string id, bool includeVacancyIds = false)
         {
             var candidate = _context.Candidates
-                    .Where(c => c.Id.ToString() == id)
-                    .Include(c => c.Workplaces)
-                    .Select(c => new
+                    .Where(x => x.Id.ToString() == id)
+                    .Select(x => new
                     {
-                        c.Id,
-                        c.Name,
-                        c.Mail,
-                        c.Education,
-                        c.Employment,
-                        c.RespondDate,
-                        c.Status,
-                        c.Salary,
-                        c.Phone,
-                        c.WorkHours,
-                        c.Skills,
-                        c.Experience,
-                        InteractionIds = includeInteractionIds ? c.Interactions.Select(i => i.Id).ToList() : null,
-                        VacancyIds = includeVacancyIds ? c.Vacancies.Select(v => v.Id).ToList() : null
+                        x.Id,
+                        x.Name,
+                        x.RespondDate,
+                        x.Education,
+                        x.Salary,
+                        x.Status,
+                        x.Skills,
+                        x.Employment,
+                        x.Mail,
+                        x.Phone,
+                        x.WorkHours,
+                        x.Experience,
+                        x.Workplaces,
+                        x.Interactions,
+                        VacancyIds = x.Vacancies.Select(x => x.Id)
                     })
                     .FirstOrDefault();
 

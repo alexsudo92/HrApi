@@ -33,29 +33,29 @@ namespace HrApi.Controllers
         public IActionResult Get(string id, bool includeCandidateIds)
         {
             var vacancy = _context.Vacancies
-                .Where(v => v.Id.ToString() == id)
-                .Select(v => new
+                .Where(x => x.Id.ToString() == id)
+                .Select(x => new
                 {
-                    v.Id,
-                    v.Name,
-                    v.StartSalary,
-                    v.EndSalary,
-                    v.Description,
-                    v.Education,
-                    v.Experience,
-                    v.Employment,
-                    v.WorkHours,
-                    v.Location,
-                    v.Branch,
-                    v.Tags,
-                    v.PostDate,
-                    v.EndDate,
-                    v.Status,
-                    v.Requirements,
-                    v.Tasks,
-                    v.Features,
+                    x.Id,
+                    x.Name,
+                    x.StartSalary,
+                    x.EndSalary,
+                    x.Description,
+                    x.Education,
+                    x.Experience,
+                    x.Employment,
+                    x.WorkHours,
+                    x.Location,
+                    x.Branch,
+                    x.Tags,
+                    x.PostDate,
+                    x.EndDate,
+                    x.Status,
+                    x.Requirements,
+                    x.Tasks,
+                    x.Features,
 
-                    CandidateIds = includeCandidateIds ? v.Candidates.Select(c => c.Id).ToList() : null
+                    CandidateIds = includeCandidateIds ? x.Candidates.Select(x => x.Id).ToList() : null
                 })
                 .FirstOrDefault();
 
