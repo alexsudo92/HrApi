@@ -3,6 +3,7 @@ using HrApi.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace HrApi.Controllers
 {
@@ -13,11 +14,13 @@ namespace HrApi.Controllers
     {
         private readonly SignInManager<User> _signInManager;
         private readonly UserManager<User> _userManager;
+        private readonly HrContext _context;
 
-        public AccountController(UserManager<User> userManager, SignInManager<User> signInManager)
+        public AccountController(UserManager<User> userManager, SignInManager<User> signInManager, HrContext context)
         {
             _signInManager = signInManager;
             _userManager = userManager;
+            _context = context;
         }
 
         [HttpPost("[action]")]
@@ -51,14 +54,69 @@ namespace HrApi.Controllers
             {
                 message.Add(claim.Value);
             }
+
             return Ok(new { Message = message });
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> Get(Guid id)
+        {
+            var user = await _userManager.FindByIdAsync(id.ToString());
+            if (user is null)
+            {
+                return BadRequest(new { Message = "User doesn't exist" });
+            }
+
+            var role = await _userManager.GetRolesAsync(user);
+            if (role is null)
+            {
+                return BadRequest(new { Message = "Role doesn't exist" });
+            }
+
+            return Ok(new
+            {
+                user.Id,
+                user.UserName,
+                user.Email,
+                user.Avatar,
+                user.PhoneNumber,
+                Role = role.FirstOrDefault()
+            });
+        }
+
+        [HttpGet("[action]")]
+        public async Task<IActionResult> Get(int count, int offset)
+        {
+            var users = await _context.Users
+                .OrderBy(x => x.Id)
+                .Skip(offset)
+                .Take(count)
+                .LeftJoin(_context.UserRoles, a => a.Id, b => b.UserId, (a, b) => new
+                {
+                    a.Id,
+                    a.UserName,
+                    a.Email,
+                    a.Avatar,
+                    a.PhoneNumber,
+                    b.RoleId
+                }).LeftJoin(_context.Roles, a => a.RoleId, b => b.Id, (a, b) => new
+                {
+                    a.Id,
+                    a.UserName,
+                    a.Email,
+                    a.Avatar,
+                    a.PhoneNumber,
+                    b.Name
+                }).ToListAsync();
+
+            return Ok(users);
         }
 
         [Authorize(Roles = "Admin")]
         [HttpPost("[action]")]
-        public async Task<IActionResult> ChangeRole(string userId, Roles role)
+        public async Task<IActionResult> ChangeRole(Guid userId, Roles role)
         {
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await _userManager.FindByIdAsync(userId.ToString());
             if (user is null)
             {
                 return BadRequest(new { Message = "User doesn't exist" });
@@ -81,7 +139,7 @@ namespace HrApi.Controllers
 
 
         [HttpGet("[action]")]
-        public async Task<IActionResult> SignOut()
+        public new async Task<IActionResult> SignOut()
         {
             await _signInManager.SignOutAsync();
 

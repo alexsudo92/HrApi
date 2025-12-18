@@ -17,9 +17,8 @@ namespace HrApi.Models
         public int WorkHours { get; set; }
         public DateTime RespondDate { get; set; }
 
-
-        public List<Workplace> Workplaces { get; set; }
-        public List<Interaction> Interactions { get; set; }
-        public List<Vacancy> Vacancies { get; set; }
+        public List<Workplace>? Workplaces { get; set; }
+        public List<Interaction>? Interactions { get; set; }
+        public List<Vacancy>? Vacancies { get; set; }
     }
 }

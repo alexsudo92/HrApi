@@ -1,4 +1,5 @@
 ﻿using HrApi.Models;
+using HrApi.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -67,48 +68,25 @@ namespace HrApi.Controllers
             return Ok(vacancy);
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutVacancy(Guid id, Vacancy vacancy)
+        [HttpPost("[action]")]
+        public async Task<IActionResult> Add(Vacancy vacancy)
         {
-            if (id != vacancy.Id)
+            var vac = await _context.Vacancies.FirstOrDefaultAsync(x => x.Id == vacancy.Id);
+            if (vac is not null)
             {
-                return BadRequest();
+                _context.Vacancies.Remove(vac);
             }
 
-            _context.Entry(vacancy).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!VacancyExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        [HttpPost]
-        public async Task<ActionResult<Vacancy>> PostVacancy(Vacancy vacancy)
-        {
             _context.Vacancies.Add(vacancy);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetVacancy", new { id = vacancy.Id }, vacancy);
+            return Ok(new { Message = "Vacancy created" });
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteVacancy(Guid id)
+        public async Task<IActionResult> Delete(Guid id)
         {
-            var vacancy = await _context.Vacancies.FindAsync(id);
+            var vacancy = await _context.Vacancies.FirstOrDefaultAsync(x => x.Id == id);
             if (vacancy == null)
             {
                 return NotFound();
@@ -117,12 +95,43 @@ namespace HrApi.Controllers
             _context.Vacancies.Remove(vacancy);
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            return Ok(new { Message = "Vacancy deleted" });
         }
 
-        private bool VacancyExists(Guid id)
+        [HttpGet("[action]")]
+        [Authorize(Roles = "BranchHead, Admin")]
+        public async Task<IActionResult> SetStatus(Guid id, VacancyStatus status)
         {
-            return _context.Vacancies.Any(e => e.Id == id);
+            var vacancy = await _context.Vacancies.FirstOrDefaultAsync(x => x.Id == id);
+            if (vacancy is null)
+            {
+                return NotFound();
+            }
+
+            vacancy.Status = status;
+
+            _context.Vacancies.Update(vacancy);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Message = "Status updated" });
+        }
+
+        [HttpGet("[action]")]
+        public async Task<IActionResult> AddCandidate(Guid vacancyId, Guid candidateId)
+        {
+            var vacancy = await _context.Vacancies.FirstOrDefaultAsync(x => x.Id == vacancyId);
+            var candidate = await _context.Candidates.FirstOrDefaultAsync(x => x.Id == candidateId);
+            if (candidate is null || vacancy is null)
+            {
+                return NotFound();
+            }
+
+            vacancy.Candidates?.Add(candidate);
+
+            _context.Vacancies.Update(vacancy);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Message = "Candidate added" });
         }
     }
 }

@@ -23,6 +23,6 @@ namespace HrApi.Models
         public List<string> Tasks { get; set; }
         public List<string> Features { get; set; }
 
-        public List<Candidate> Candidates { get; set; }
+        public List<Candidate>? Candidates { get; set; }
     }
 }
